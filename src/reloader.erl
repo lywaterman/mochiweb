@@ -126,7 +126,8 @@ doit(From, To) ->
 
 reload(Module) ->
     io:format("Reloading ~p ...", [Module]),
-    code:purge(Module),
+    code:soft_purge(Module) andalso code:load_file(Module),
+    %%code:purge(Module),
     case code:load_file(Module) of
         {module, Module} ->
             io:format(" ok.~n"),
