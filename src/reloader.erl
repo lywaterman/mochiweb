@@ -126,9 +126,10 @@ doit(From, To) ->
 
 reload(Module) ->
     io:format("Reloading ~p ...", [Module]),
-    code:soft_purge(Module) andalso code:load_file(Module),
     %%code:purge(Module),
-    case code:load_file(Module) of
+    case code:soft_purge(Module) andalso code:load_file(Module) of
+        false ->
+            io:format("~p is using", [Module]);
         {module, Module} ->
             io:format(" ok.~n"),
             case erlang:function_exported(Module, test, 0) of
