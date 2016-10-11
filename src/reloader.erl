@@ -123,57 +123,65 @@ doit(From, To) ->
                        [Filename, Reason]),
              error
      end || {Module, Filename} <- code:all_loaded(), is_list(Filename)].
-     
-reload(Module) ->
-    io:format("Reloading ~p ...", [Module]),
-    code:purge(Module),
-    case code:load_file(Module) of
-        {module, Module} ->
-            io:format(" ok.~n"),
-            case erlang:function_exported(Module, test, 0) of
-                true ->
-                    io:format(" - Calling ~p:test() ...", [Module]),
-                    case catch Module:test() of
-                        ok ->
-                            io:format(" ok.~n"),
-                            reload;
-                        Reason ->
-                            io:format(" fail: ~p.~n", [Reason]),
-                            reload_but_test_failed
-                    end;
-                false ->
-                    reload
-            end;
-        {error, Reason} ->
-            io:format(" fail: ~p.~n", [Reason]),
-            error
-    end.
 
-%%reload(Module) ->
-%%    io:format("Reloading ~p ...", [Module]),
-%%    case code:soft_purge(Module) andalso code:load_file(Module) of
-%%        false ->
-%%            io:format("~p is using", [Module]);
-%%        {module, Module} ->
-%%            io:format(" ok.~n"),
-%%            case erlang:function_exported(Module, test, 0) of
-%%                true ->
-%%                    io:format(" - Calling ~p:test() ...", [Module]),
-%%                    case catch Module:test() of
-%%                        ok ->
-%%                            io:format(" ok.~n"),
-%%                            reload;
-%%                        Reason ->
-%%                            io:format(" fail: ~p.~n", [Reason]),
-%%                            reload_but_test_failed
-%%                    end;
-%%               false ->
-%%                    reload
-%%            end;
-%%        {error, Reason} ->
-%%            io:format(" fail: ~p.~n", [Reason]),
-%%            error
-%%    end.
+reload(Module) ->
+    if Module == gate_web orelse
+       Module == web_web ->
+           reload_hard(Module);
+       true ->
+           reload_soft(Module)
+    end.
+     
+ reload_hard(Module) ->
+     io:format("Reloading ~p hard...~n", [Module]),
+     code:purge(Module),
+     case code:load_file(Module) of
+         {module, Module} ->
+             io:format(" ok.~n"),
+             case erlang:function_exported(Module, test, 0) of
+                 true ->
+                     io:format(" - Calling ~p:test() ...", [Module]),
+                     case catch Module:test() of
+                         ok ->
+                             io:format(" ok.~n"),
+                             reload;
+                         Reason ->
+                             io:format(" fail: ~p.~n", [Reason]),
+                             reload_but_test_failed
+                     end;
+                 false ->
+                     reload
+             end;
+         {error, Reason} ->
+             io:format(" fail: ~p.~n", [Reason]),
+             error
+     end.
+
+ reload_soft(Module) ->
+     io:format("Reloading ~p soft ...~n", [Module]),
+     case code:soft_purge(Module) andalso code:load_file(Module) of
+         false ->
+             io:format("~p is using~n", [Module]);
+         {module, Module} ->
+             io:format(" ok.~n"),
+             case erlang:function_exported(Module, test, 0) of
+                 true ->
+                     io:format(" - Calling ~p:test() ...", [Module]),
+                     case catch Module:test() of
+                         ok ->
+                             io:format(" ok.~n"),
+                             reload;
+                         Reason ->
+                             io:format(" fail: ~p.~n", [Reason]),
+                             reload_but_test_failed
+                     end;
+                false ->
+                     reload
+             end;
+         {error, Reason} ->
+             io:format(" fail: ~p.~n", [Reason]),
+             error
+     end.
 
 
 stamp() ->
